@@ -1,0 +1,14 @@
+name: Issue Labeler
+description: Set a label on linked issues when merged
+runs:
+  using: node12
+  main: dist/index.js
+branding:
+  icon: check-square
+  color: gray-dark
+inputs:
+  label:
+    description: >-
+      The label to set on linked issues when this is merged to the branch
+      specified in its yaml
+    required: true
