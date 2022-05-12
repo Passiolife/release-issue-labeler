@@ -19420,9 +19420,7 @@ var __webpack_exports__ = {};
 (() => {
 const { Toolkit } = __nccwpck_require__(7047);
 // g1 is the keyword | g2 is issue number without #
-const ISSUE_KW = /(?:^|(?<= |\t|,|\.|;|"|'|`))(close|closes|closed|fixed|fix|fixes|resolve|resolves|resolved)\s+#(\d+)/gim
-const PRID = /(?:^|(?<= |\t|,|\.|;|"|'|`))(Merge pull request)\s+#(\d+)/gim
-const REPO_INFO = /(github.com\/)([a-zA-Z0-9-_]*)\/([a-zA-Z0-9-_]*)\//gim
+const ISSUE_KW = /(?:^|(?<= |\t|,|\.|;|"|'|`))(close|closes|closed|fixed|fix|fixes|resolve|resolves|resolved)[\s:_-]*#(\d+)/gim
 
 Toolkit.run(async (tools) => {
   const bodyList = [];
