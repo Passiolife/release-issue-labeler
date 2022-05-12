@@ -19485,12 +19485,31 @@ Toolkit.run(async (tools) => {
 
   var numUpdated = 0;
   for (let iid of unique) {
+    // need to check on the issue first... adding a label seems to re-open it so we will want to close after if we do so
+    let oIssue = await tools.github.issues.get({
+      owner: owner,
+      repo: repo,
+      issue_number: iid
+    });
+
     let a = await tools.github.issues.addLabels({
       owner: owner,
       repo: repo,
       issue_number: iid,
       labels: [tools.inputs.label]      
     });
+    
+    // if it was previously closed, lets make sure we re-close it
+    if (oIssue && oIssue.data.state === "closed") {
+      let oUpdateIssue = await tools.github.issues.update({
+        owner: owner,
+        repo: repo,
+        issue_number: iid,
+        state: "closed"
+      });
+      tools.log.info(`issue was closed before labeling - re-closing the ticket responded with status: ${oUpdateIssue.status}`)
+    }
+
     numUpdated += 1;
     tools.log.info(`setting issue #${iid} label to ${tools.inputs.label} had status: ${a.status}`);
   }
