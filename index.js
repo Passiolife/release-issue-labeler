@@ -7,28 +7,35 @@ Toolkit.run(async (tools) => {
   var owner = tools.context.repo.owner;
   var repo = tools.context.repo.repo;
 
+  var checkedPrs = [];
+
+  // lists pull requests associated with the incoming commit
   const { data: associatedPulls } = await tools.github.repos.listPullRequestsAssociatedWithCommit({
     owner: owner,
     repo: repo,
     commit_sha: tools.context.sha
   })
 
+  // loop associated pulls
   for (let pr of associatedPulls) {
     tools.log.info(`found linked pull #${pr.number}`)
-    
+
+    // keeping track of what prs we have looked at since we check more later
+    checkedPrs.push(pr.number);
+
+    // add the body message to our list to scan
     if (pr.body) {
-      bodyList.push(pr.body);
-      tools.log.info(`found pull body: ${pr.body}`)
+      bodyList.push(pr.body);      
     };
     
+    // list the comments on the PR
     const { data: comments } = await tools.github.pulls.listReviewComments({
       owner: owner,
       repo: repo,
       pull_number: pr.number
-    });
-
-    tools.log.info(`found review ${comments.length} comments to scan on the pull`)
+    });    
   
+    // and add those to scan too
     for (let comment of comments) {
       bodyList.push(comment.body);
     }    
@@ -38,8 +45,44 @@ Toolkit.run(async (tools) => {
   // lets add the commit messages from the context
   for (let cm of tools.context.payload.commits) {
     bodyList.push(cm.message)
+
+    // also for each commit, list associated PRs. This is because if merging main to release, each commit has its own PR probably
+    var { data: commitAssociatedPulls } = await tools.github.repos.listPullRequestsAssociatedWithCommit({
+      owner: owner,
+      repo: repo,
+      commit_sha: cm.sha
+    })
+
+    // again, loop those PRS
+    for (let pr of commitAssociatedPulls) {
+
+      // if we already looked at this pr, ignore it
+      if (checkedPrs.includes(pr.number)) {
+        continue;
+      }
+      // log this one as checked
+      checkedPrs.push(pr.number);
+
+      // add its body message to scanning
+      if (pr.body) {
+        bodyList.push(pr.body);
+      };
+      
+      // again, list all comments on this PR
+      var { data: commitPrComments } = await tools.github.pulls.listReviewComments({
+        owner: owner,
+        repo: repo,
+        pull_number: pr.number
+      });
+  
+      // and add them to scanning
+      for (let comment of commitPrComments) {
+        bodyList.push(comment.body);
+      }    
+    }
   }
 
+  // scan!
   var issueIds = [];
   for (let body of bodyList) {
     var matches = [...body.matchAll(ISSUE_KW)];
@@ -50,10 +93,11 @@ Toolkit.run(async (tools) => {
     }
   }
 
-  // unique
+  // unique issue ids
   const unique = [...new Set(issueIds)];
   tools.log.info(`found linked issues: ${JSON.stringify(unique)}`)
 
+  // done if we found none
   if (unique.length <= 0) {
     tools.exit.neutral(
       "Unable to find any linked issues to label"
@@ -70,6 +114,7 @@ Toolkit.run(async (tools) => {
       issue_number: iid
     });
 
+    // add the label - note this can re-open a PR
     let a = await tools.github.issues.addLabels({
       owner: owner,
       repo: repo,
