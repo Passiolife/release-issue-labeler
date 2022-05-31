@@ -19420,9 +19420,7 @@ var __webpack_exports__ = {};
 (() => {
 const { Toolkit } = __nccwpck_require__(7047);
 // g1 is the keyword | g2 is issue number without #
-const ISSUE_KW = /(?:^|(?<= |\t|,|\.|;|"|'|`))(close|closes|closed|fixed|fix|fixes|resolve|resolves|resolved)\s+#(\d+)/gim
-const PRID = /(?:^|(?<= |\t|,|\.|;|"|'|`))(Merge pull request)\s+#(\d+)/gim
-const REPO_INFO = /(github.com\/)([a-zA-Z0-9-_]*)\/([a-zA-Z0-9-_]*)\//gim
+const ISSUE_KW = /(?:^|(?<= |\t|,|\.|;|"|'|`))(close|closes|closed|fixed|fix|fixes|resolve|resolves|resolved)[\s:_-]*#(\d+)/gim
 
 Toolkit.run(async (tools) => {
   const bodyList = [];
@@ -19485,12 +19483,31 @@ Toolkit.run(async (tools) => {
 
   var numUpdated = 0;
   for (let iid of unique) {
+    // need to check on the issue first... adding a label seems to re-open it so we will want to close after if we do so
+    let oIssue = await tools.github.issues.get({
+      owner: owner,
+      repo: repo,
+      issue_number: iid
+    });
+
     let a = await tools.github.issues.addLabels({
       owner: owner,
       repo: repo,
       issue_number: iid,
       labels: [tools.inputs.label]      
     });
+    
+    // if it was previously closed, lets make sure we re-close it
+    if (oIssue && oIssue.data.state === "closed") {
+      let oUpdateIssue = await tools.github.issues.update({
+        owner: owner,
+        repo: repo,
+        issue_number: iid,
+        state: "closed"
+      });
+      tools.log.info(`issue was closed before labeling - re-closing the ticket responded with status: ${oUpdateIssue.status}`)
+    }
+
     numUpdated += 1;
     tools.log.info(`setting issue #${iid} label to ${tools.inputs.label} had status: ${a.status}`);
   }
