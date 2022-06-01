@@ -23,7 +23,7 @@ Toolkit.run(async (tools) => {
 
   // loop associated pulls
   for (let pr of associatedPulls) {
-    tools.log.info(`scanning PR (#${pr.number}) linked to commit: ${cm.id}`);
+    tools.log.info(`scanning PR (#${pr.number}) linked to commit: ${tools.context.sha}`);
 
     // keeping track of what prs we have looked at since we check more later
     checkedPrs.push(pr.number);
