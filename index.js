@@ -53,12 +53,12 @@ Toolkit.run(async (tools) => {
   // lets add the commit messages from the context
   for (let cm of tools.context.payload.commits) {
     bodyList.push(cm.message)
-    tools.log.info(`commit info: ${JSON.stringify(cm)}`);
+    
     // also for each commit, list associated PRs. This is because if merging main to release, each commit has its own PR probably
     var respCommitAssociatedPulls = await tools.github.repos.listPullRequestsAssociatedWithCommit({
       owner: owner,
       repo: repo,
-      commit_sha: cm.sha
+      commit_sha: cm.id
     })
     var commitAssociatedPulls = [];
     if (respCommitAssociatedPulls.status == 200) {
