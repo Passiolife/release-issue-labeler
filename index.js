@@ -23,6 +23,11 @@ Toolkit.run(async (tools) => {
 
   // loop associated pulls
   for (let pr of associatedPulls) {
+    // if we already looked at this pr, ignore it
+    if (checkedPrs.includes(pr.number)) {
+      continue;
+    }
+    
     tools.log.info(`scanning PR (#${pr.number}) linked to commit: ${tools.context.sha}`);
 
     // keeping track of what prs we have looked at since we check more later
