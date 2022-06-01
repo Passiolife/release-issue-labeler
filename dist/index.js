@@ -19430,11 +19430,16 @@ Toolkit.run(async (tools) => {
   var checkedPrs = [];
 
   // lists pull requests associated with the incoming commit
-  const { data: associatedPulls } = await tools.github.repos.listPullRequestsAssociatedWithCommit({
+  const respAssociatedPulls = await tools.github.repos.listPullRequestsAssociatedWithCommit({
     owner: owner,
     repo: repo,
     commit_sha: tools.context.sha
-  })
+  });
+
+  var associatedPulls = [];
+  if (respAssociatedPulls.status == 200) {
+    associatedPulls = respAssociatedPulls.data;
+  }
 
   // loop associated pulls
   for (let pr of associatedPulls) {
@@ -19449,12 +19454,15 @@ Toolkit.run(async (tools) => {
     };
     
     // list the comments on the PR
-    const { data: comments } = await tools.github.pulls.listReviewComments({
+    const respComments = await tools.github.pulls.listReviewComments({
       owner: owner,
       repo: repo,
       pull_number: pr.number
     });    
-  
+    var comments = [];
+    if (respComments.status == 200) {
+      comments = respComments.data;
+    }
     // and add those to scan too
     for (let comment of comments) {
       bodyList.push(comment.body);
@@ -19467,11 +19475,15 @@ Toolkit.run(async (tools) => {
     bodyList.push(cm.message)
 
     // also for each commit, list associated PRs. This is because if merging main to release, each commit has its own PR probably
-    var { data: commitAssociatedPulls } = await tools.github.repos.listPullRequestsAssociatedWithCommit({
+    var respCommitAssociatedPulls = await tools.github.repos.listPullRequestsAssociatedWithCommit({
       owner: owner,
       repo: repo,
       commit_sha: cm.sha
     })
+    var commitAssociatedPulls = [];
+    if (respCommitAssociatedPulls.status == 200) {
+      commitAssociatedPulls = respCommitAssociatedPulls.data;
+    }
 
     // again, loop those PRS
     for (let pr of commitAssociatedPulls) {
@@ -19489,11 +19501,15 @@ Toolkit.run(async (tools) => {
       };
       
       // again, list all comments on this PR
-      var { data: commitPrComments } = await tools.github.pulls.listReviewComments({
+      var respCommitPrComments = await tools.github.pulls.listReviewComments({
         owner: owner,
         repo: repo,
         pull_number: pr.number
       });
+      var commitPrComments = [];
+      if (respCommitPrComments.status == 200) {
+        commitPrComments = respCommitPrComments.data;
+      }
   
       // and add them to scanning
       for (let comment of commitPrComments) {
